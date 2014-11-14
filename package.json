@@ -1,0 +1,10 @@
+{
+  "name": "expensior",
+  "version": "0.0.1",
+  "dependencies": {
+    "body-parser": "^1.9.2",
+    "express": "^4.10.2",
+    "express-session": "^1.9.1",
+    "pwd": "0.0.4"
+  }
+}
