@@ -6,5 +6,9 @@
     "express": "^4.10.2",
     "express-session": "^1.9.1",
     "pwd": "0.0.4"
+  },
+  "devDependencies": {
+    "requestify": "^0.1.16",
+    "should": "^4.3.0"
   }
 }
