@@ -1,6 +1,7 @@
 var auth = require('../lib/auth');
 var should = require('should');
-var requestify = require('requestify');
+var request = require('request');
+var jar = request.jar();
 
 var PORT = 3000;
 var BASE_URL = "http://localhost:" + PORT;
@@ -22,167 +23,208 @@ describe('Authentication Module Tests', function () {
     });
 
     it('should throw an error when creating a user without username', function (done) {
-        requestify.post(BASE_URL + '/user', {}).then(null, function (response) {
-            try {
-                response.getCode().should.equal(400);
-                var body = response.getBody();
-                body.should.have.property("error");
-                body.error.should.have.property("message");
-                body.error.message.should.equal("No username provided");
-                done();
-            } catch (err) {
+        request.post(BASE_URL + '/user', {json: true, body: {}}, function (err, response, body) {
+            if (err) {
                 done(err);
             }
+            body.should.have.property("error");
+            body.error.should.have.property("message");
+            body.error.message.should.equal("No username provided");
+            done();
         });
     });
 
     it('should throw an error when creating a user without password', function (done) {
-        requestify.post(BASE_URL + '/user', {username: "test"}).then(null, function (response) {
-            try {
-                response.getCode().should.equal(400);
-                var body = response.getBody();
-                body.should.have.property("error");
-                body.error.should.have.property("message");
-                body.error.message.should.equal("No password provided");
-                done();
-            } catch (err) {
+        request.post(BASE_URL + '/user', {json: true, body: {username: "test"}}, function (err, response, body) {
+            if (err) {
                 done(err);
             }
+            response.statusCode.should.equal(400);
+            body.should.have.property("error");
+            body.error.should.have.property("message");
+            body.error.message.should.equal("No password provided");
+            done();
         });
     });
 
     it('should throw an error when creating a user without name', function (done) {
-        requestify.post(BASE_URL + '/user', {
-            username: "test",
-            password: "testingpassword"
-        }).then(null, function (response) {
-            try {
-                response.getCode().should.equal(400);
-                var body = response.getBody();
-                body.should.have.property("error");
-                body.error.should.have.property("message");
-                body.error.message.should.equal("No name provided");
-                done();
-            } catch (err) {
+        request.post(BASE_URL + '/user', {
+            json: true, body: {
+                username: "test",
+                password: "testingpassword"
+            }
+        }, function (err, response, body) {
+            if (err) {
                 done(err);
             }
+            response.statusCode.should.equal(400);
+            body.should.have.property("error");
+            body.error.should.have.property("message");
+            body.error.message.should.equal("No name provided");
+            done();
         });
     });
 
     it('should have password with atleast 8 characters', function (done) {
-        requestify.post(BASE_URL + '/user', {
-            username: "test",
-            password: "testing",
-            name: "Tester"
-        }).then(null, function (response) {
-            try {
-                response.getCode().should.equal(400);
-                var body = response.getBody();
-                body.should.have.property("error");
-                body.error.should.have.property("message");
-                body.error.message.should.equal("Password must be atleast 8 characters long");
-                done();
-            } catch (err) {
+        request.post(BASE_URL + '/user', {
+            json: true,
+            body: {
+                username: "test",
+                password: "testing",
+                name: "Tester"
+            }
+        }, function (err, response, body) {
+            if (err) {
                 done(err);
             }
+            response.statusCode.should.equal(400);
+            body.should.have.property("error");
+            body.error.should.have.property("message");
+            body.error.message.should.equal("Password must be atleast 8 characters long");
+            done();
         });
     });
 
     it('should create an user and session when everything is in order', function (done) {
-        requestify.post(BASE_URL + '/user', {
-            username: "test",
-            password: "testingpassword",
-            name: "Tester"
-        }).then(function (response) {
-            try {
-                response.getCode().should.equal(201);
-                var body = response.getBody();
-                body.should.have.property("status");
-                body.status.should.equal("Successfully registered user");
-                should.exist(response.getHeader('set-cookie'));
-                response.getHeader('set-cookie').should.be.an.Array;
-                response.getHeader('set-cookie').should.not.be.empty;
-                response.getHeader('set-cookie').pop().should.containEql('expensior_session');
-                done();
-            } catch (err) {
+        var registrationJar = request.jar();
+        request.post(BASE_URL + '/user', {
+            json: true, jar: registrationJar, body: {
+                username: "test",
+                password: "testingpassword",
+                name: "Tester"
+            }
+        }, function (err, response, body) {
+            if (err) {
                 done(err);
             }
-        }, done);
+            response.statusCode.should.equal(201);
+            body.should.have.property("status");
+            body.status.should.equal("Successfully registered user");
+            registrationJar.getCookies(BASE_URL).pop().key.should.equal("expensior_session");
+            done();
+        });
     });
 
     it('should not create an username if it already exists', function (done) {
-        requestify.post(BASE_URL + '/user', {
-            username: "test",
-            password: "testingpassword",
-            name: "Tester"
-        }).then(null, function (response) {
-            try {
-                response.getCode().should.equal(409);
-                var body = response.getBody();
-                body.should.have.property("error");
-                body.error.should.have.property("message");
-                body.error.message.should.equal("Username already exists");
-                done();
-            } catch (err) {
+        request.post(BASE_URL + '/user', {
+            json: true, body: {
+                username: "test",
+                password: "testingpassword",
+                name: "Tester"
+            }
+        }, function (err, response, body) {
+            if (err) {
                 done(err);
             }
+            response.statusCode.should.equal(409);
+            body.should.have.property("error");
+            body.error.should.have.property("message");
+            body.error.message.should.equal("Username already exists");
+            done();
         });
     });
 
     it('should not login if password is incorrect', function (done) {
-        requestify.post(BASE_URL + '/session', {
-            username: "test",
-            password: "wrongpassword",
-            name: "Tester"
-        }).then(null, function (response) {
-            try {
-                response.getCode().should.equal(401);
-                var body = response.getBody();
-                body.should.have.property("error");
-                body.error.should.have.property("message");
-                body.error.message.should.equal("Username or password is invalid");
-                done();
-            } catch (err) {
+        request.post(BASE_URL + '/session', {
+            json: true, body: {
+                username: "test",
+                password: "wrongpassword",
+                name: "Tester"
+            }
+        }, function (err, response, body) {
+            if (err) {
                 done(err);
             }
+            response.statusCode.should.equal(401);
+            body.should.have.property("error");
+            body.error.should.have.property("message");
+            body.error.message.should.equal("Username or password is invalid");
+            done();
         });
     });
 
     it('should not login if user is not registered', function (done) {
-        requestify.post(BASE_URL + '/session', {
-            username: "nouser",
-            password: "testingpassword",
-            name: "Tester"
-        }).then(null, function (response) {
-            try {
-                response.getCode().should.equal(401);
-                var body = response.getBody();
-                body.should.have.property("error");
-                body.error.should.have.property("message");
-                body.error.message.should.equal("Username does not exist");
-                done();
-            } catch (err) {
+        request.post(BASE_URL + '/session', {
+            json: true, body: {
+                username: "nouser",
+                password: "testingpassword",
+                name: "Tester"
+            }
+        }, function (err, response, body) {
+            if (err) {
                 done(err);
             }
+            response.statusCode.should.equal(401);
+            body.should.have.property("error");
+            body.error.should.have.property("message");
+            body.error.message.should.equal("Username does not exist");
+            done();
         });
     });
 
-    it('should login if username and password is correct', function (done) {
-        requestify.post(BASE_URL + '/session', {
-            username: "test",
-            password: "testingpassword",
-            name: "Tester"
-        }).then(function (response) {
-            try {
-                response.getCode().should.equal(201);
-                var body = response.getBody();
-                body.should.have.property("status");
-                body.status.should.equal("Logged in successfully");
-                done();
-            } catch (err) {
+    it('should login and set session cookie if username and password is correct', function (done) {
+        request.post(BASE_URL + '/session', {
+            json: true, jar: jar, body: {
+                username: "test",
+                password: "testingpassword",
+                name: "Tester"
+            }
+        }, function (err, response, body) {
+            if (err) {
                 done(err);
             }
-        }, done);
+            response.statusCode.should.equal(201);
+            body.should.have.property("status");
+            body.status.should.equal("Logged in successfully");
+            jar.getCookies(BASE_URL).pop().key.should.equal("expensior_session");
+            done();
+        });
+    });
+
+    it('should not login again if session exists', function (done) {
+        request.post(BASE_URL + '/session', {
+            json: true, jar: jar, body: {
+                username: "test",
+                password: "testingpassword",
+                name: "Tester"
+            }
+        }, function (err, response, body) {
+            if (err) {
+                done(err);
+            }
+            response.statusCode.should.equal(200);
+            body.should.have.property("status");
+            body.status.should.equal("Already logged in");
+            done();
+        });
+    });
+
+    it('should logout if session exists', function (done) {
+        request.del(BASE_URL + '/session', {
+            json: true, jar: jar, body: {}
+        }, function (err, response, body) {
+            if (err) {
+                done(err);
+            }
+            response.statusCode.should.equal(200);
+            body.should.have.property("status");
+            body.status.should.equal("Logged out successfully");
+            done();
+        });
+    });
+
+    it('should identify we are already logged out if session does not exist', function (done) {
+        request.del(BASE_URL + '/session', {
+            json: true, jar: jar, body: {}
+        }, function (err, response, body) {
+            if (err) {
+                done(err);
+            }
+            response.statusCode.should.equal(200);
+            body.should.have.property("status");
+            body.status.should.equal("Already logged out");
+            done();
+        });
     });
 });
 

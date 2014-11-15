@@ -8,7 +8,8 @@
     "pwd": "0.0.4"
   },
   "devDependencies": {
-    "requestify": "^0.1.16",
-    "should": "^4.3.0"
+    "request": "^2.48.0",
+    "should": "^4.3.0",
+    "tough-cookie": "^0.12.1"
   }
 }
