@@ -126,6 +126,62 @@ describe('Authentication Module Tests', function () {
             } catch (err) {
                 done(err);
             }
+        });
+    });
+
+    it('should not login if password is incorrect', function (done) {
+        requestify.post(BASE_URL + '/session', {
+            username: "test",
+            password: "wrongpassword",
+            name: "Tester"
+        }).then(null, function (response) {
+            try {
+                response.getCode().should.equal(401);
+                var body = response.getBody();
+                body.should.have.property("error");
+                body.error.should.have.property("message");
+                body.error.message.should.equal("Username or password is invalid");
+                done();
+            } catch (err) {
+                done(err);
+            }
+        });
+    });
+
+    it('should not login if user is not registered', function (done) {
+        requestify.post(BASE_URL + '/session', {
+            username: "nouser",
+            password: "testingpassword",
+            name: "Tester"
+        }).then(null, function (response) {
+            try {
+                response.getCode().should.equal(401);
+                var body = response.getBody();
+                body.should.have.property("error");
+                body.error.should.have.property("message");
+                body.error.message.should.equal("Username does not exist");
+                done();
+            } catch (err) {
+                done(err);
+            }
+        });
+    });
+
+    it('should login if username and password is correct', function (done) {
+        requestify.post(BASE_URL + '/session', {
+            username: "test",
+            password: "testingpassword",
+            name: "Tester"
+        }).then(function (response) {
+            try {
+                response.getCode().should.equal(201);
+                var body = response.getBody();
+                body.should.have.property("status");
+                body.status.should.equal("Logged in successfully");
+                done();
+            } catch (err) {
+                done(err);
+            }
         }, done);
     });
 });
