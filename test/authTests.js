@@ -213,7 +213,7 @@ describe('Authentication Tests', function () {
                 data.response.statusCode.should.equal(201);
                 data.body.should.have.property("status");
                 data.body.status.should.equal("Successfully registered user");
-                cookies.getCookies(BASE_URL).pop().key.should.equal("expensior_session");
+                cookies.getCookies(BASE_URL).pop().key.should.equal("app_session");
                 done();
             }).fail(done);
         });
@@ -310,7 +310,7 @@ describe('Authentication Tests', function () {
                 response.statusCode.should.equal(201);
                 body.should.have.property("status");
                 body.status.should.equal("Logged in successfully");
-                cookies.getCookies(BASE_URL).pop().key.should.equal("expensior_session");
+                cookies.getCookies(BASE_URL).pop().key.should.equal("app_session");
                 done();
             });
         });

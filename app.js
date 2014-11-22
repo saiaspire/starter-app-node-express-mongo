@@ -1,5 +1,5 @@
 "use strict";
-var MONGODB_CONNECTION_STRING = 'mongodb://localhost/expensior';
+var MONGODB_CONNECTION_STRING = 'mongodb://localhost/app';
 var PORT = 3000;
 
 var express = require('express');
