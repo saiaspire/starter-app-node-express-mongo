@@ -215,7 +215,7 @@ describe('Authentication Tests', function () {
                 data.body.status.should.equal("Successfully registered user");
                 cookies.getCookies(BASE_URL).pop().key.should.equal("expensior_session");
                 done();
-            }, done);
+            }).fail(done);
         });
 
         it('should not create user if username already exists', function (done) {
@@ -227,7 +227,7 @@ describe('Authentication Tests', function () {
                 data.body.error.should.have.property("message");
                 data.body.error.message.should.equal("Username already exists");
                 done();
-            }, done);
+            }).fail(done);
         });
 
         it('should not create user if the email is already registered to someone else', function (done) {
@@ -239,7 +239,7 @@ describe('Authentication Tests', function () {
                 data.body.error.should.have.property("message");
                 data.body.error.message.should.equal("Email already registered to another account");
                 done();
-            }, done);
+            }).fail(done);
         });
     });
 
