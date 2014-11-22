@@ -42,7 +42,19 @@ describe('Authentication Module Tests', function () {
             }
             body.should.have.property("error");
             body.error.should.have.property("message");
-            body.error.message.should.equal("No username provided");
+            body.error.message.should.equal("Username must contain only letters and numbers");
+            done();
+        });
+    });
+
+    it('should throw an error when creating a username with special characters', function (done) {
+        request.post(BASE_URL + '/user', {json: true, body: {username: "test11**!@"}}, function (err, response, body) {
+            if (err) {
+                done(err);
+            }
+            body.should.have.property("error");
+            body.error.should.have.property("message");
+            body.error.message.should.equal("Username must contain only letters and numbers");
             done();
         });
     });
@@ -55,7 +67,7 @@ describe('Authentication Module Tests', function () {
             response.statusCode.should.equal(400);
             body.should.have.property("error");
             body.error.should.have.property("message");
-            body.error.message.should.equal("No password provided");
+            body.error.message.should.equal("Password must be between 8 to 16 characters long");
             done();
         });
     });
@@ -73,7 +85,65 @@ describe('Authentication Module Tests', function () {
             response.statusCode.should.equal(400);
             body.should.have.property("error");
             body.error.should.have.property("message");
-            body.error.message.should.equal("No name provided");
+            body.error.message.should.equal("Name must contain only letters");
+            done();
+        });
+    });
+
+    it('should throw an error when creating a user name containing numbers or special characters', function (done) {
+        request.post(BASE_URL + '/user', {
+            json: true, body: {
+                username: "test",
+                password: "testingpassword",
+                name: "832098ads! &&$"
+            }
+        }, function (err, response, body) {
+            if (err) {
+                done(err);
+            }
+            response.statusCode.should.equal(400);
+            body.should.have.property("error");
+            body.error.should.have.property("message");
+            body.error.message.should.equal("Name must contain only letters");
+            done();
+        });
+    });
+
+    it('should throw an error when creating a user without email', function (done) {
+        request.post(BASE_URL + '/user', {
+            json: true, body: {
+                username: "test",
+                password: "testingpassword",
+                name: "Test User"
+            }
+        }, function (err, response, body) {
+            if (err) {
+                done(err);
+            }
+            response.statusCode.should.equal(400);
+            body.should.have.property("error");
+            body.error.should.have.property("message");
+            body.error.message.should.equal("Not a valid email address");
+            done();
+        });
+    });
+
+    it('should throw an error when creating a user with invalid email', function (done) {
+        request.post(BASE_URL + '/user', {
+            json: true, body: {
+                username: "test",
+                password: "testingpassword",
+                name: "Test User",
+                email: "jash89"
+            }
+        }, function (err, response, body) {
+            if (err) {
+                done(err);
+            }
+            response.statusCode.should.equal(400);
+            body.should.have.property("error");
+            body.error.should.have.property("message");
+            body.error.message.should.equal("Not a valid email address");
             done();
         });
     });
@@ -84,7 +154,8 @@ describe('Authentication Module Tests', function () {
             body: {
                 username: "test",
                 password: "testing",
-                name: "Tester"
+                name: "Tester",
+                email: "test@test.com"
             }
         }, function (err, response, body) {
             if (err) {
@@ -93,7 +164,28 @@ describe('Authentication Module Tests', function () {
             response.statusCode.should.equal(400);
             body.should.have.property("error");
             body.error.should.have.property("message");
-            body.error.message.should.equal("Password must be atleast 8 characters long");
+            body.error.message.should.equal("Password must be between 8 to 16 characters long");
+            done();
+        });
+    });
+
+    it('should have password less than or equal to 16 characters', function (done) {
+        request.post(BASE_URL + '/user', {
+            json: true,
+            body: {
+                username: "test",
+                password: "testingtestingtes",
+                name: "Tester",
+                email: "test@test.com"
+            }
+        }, function (err, response, body) {
+            if (err) {
+                done(err);
+            }
+            response.statusCode.should.equal(400);
+            body.should.have.property("error");
+            body.error.should.have.property("message");
+            body.error.message.should.equal("Password must be between 8 to 16 characters long");
             done();
         });
     });
@@ -104,7 +196,8 @@ describe('Authentication Module Tests', function () {
             json: true, jar: registrationJar, body: {
                 username: "test",
                 password: "testingpassword",
-                name: "Tester"
+                name: "Tester",
+                email: "test@test.com"
             }
         }, function (err, response, body) {
             if (err) {
@@ -123,7 +216,8 @@ describe('Authentication Module Tests', function () {
             json: true, body: {
                 username: "test",
                 password: "testingpassword",
-                name: "Tester"
+                name: "Tester",
+                email: "test2@test.com"
             }
         }, function (err, response, body) {
             if (err) {
@@ -137,12 +231,33 @@ describe('Authentication Module Tests', function () {
         });
     });
 
+    it('should not create an user if the email is already registered to someone else', function (done) {
+        request.post(BASE_URL + '/user', {
+            json: true, body: {
+                username: "testemail",
+                password: "testingpassword",
+                name: "Tester",
+                email: "test@test.com"
+            }
+        }, function (err, response, body) {
+            if (err) {
+                done(err);
+            }
+            response.statusCode.should.equal(409);
+            body.should.have.property("error");
+            body.error.should.have.property("message");
+            body.error.message.should.equal("Email already registered to another account");
+            done();
+        });
+    });
+
     it('should not login if password is incorrect', function (done) {
         request.post(BASE_URL + '/session', {
             json: true, body: {
                 username: "test",
                 password: "wrongpassword",
-                name: "Tester"
+                name: "Tester",
+                email: "test@test.com"
             }
         }, function (err, response, body) {
             if (err) {
@@ -161,7 +276,8 @@ describe('Authentication Module Tests', function () {
             json: true, body: {
                 username: "nouser",
                 password: "testingpassword",
-                name: "Tester"
+                name: "Tester",
+                email: "test@test.com"
             }
         }, function (err, response, body) {
             if (err) {
@@ -180,7 +296,8 @@ describe('Authentication Module Tests', function () {
             json: true, jar: jar, body: {
                 username: "test",
                 password: "testingpassword",
-                name: "Tester"
+                name: "Tester",
+                email: "test@test.com"
             }
         }, function (err, response, body) {
             if (err) {
@@ -199,7 +316,8 @@ describe('Authentication Module Tests', function () {
             json: true, jar: jar, body: {
                 username: "test",
                 password: "testingpassword",
-                name: "Tester"
+                name: "Tester",
+                email: "test@test.com"
             }
         }, function (err, response, body) {
             if (err) {
