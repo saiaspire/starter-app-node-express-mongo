@@ -25,8 +25,9 @@ describe('Authentication Module Tests', function () {
 
     after(function (done) {
         server.close(function () {
-            mongoose.connection.db.dropDatabase();
-            mongoose.connection.close(done);
+            mongoose.connection.db.dropDatabase(function () {
+                mongoose.connection.close(done);
+            });
         });
     });
 

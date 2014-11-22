@@ -5,7 +5,6 @@ var PORT = 3000;
 var express = require('express');
 var mongoose = require('mongoose');
 var auth = require('./lib/auth');
-var q = require('q');
 var api = require('./lib/api');
 var error = require('./lib/error');
 
