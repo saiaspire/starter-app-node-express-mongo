@@ -1,3 +1,4 @@
+"use strict";
 var auth = require('../lib/auth');
 var should = require('should');
 var request = require('request');
@@ -7,6 +8,7 @@ var q = require('q');
 var PORT = 3000;
 var MONGODB_CONNECTION_STRING = 'mongodb://localhost/auth_test';
 var BASE_URL = "http://localhost:" + PORT;
+var helper = require('./lib/helper')({url: BASE_URL});
 
 var server;
 
@@ -209,7 +211,7 @@ describe('Authentication Tests', function () {
 
         it('should create an user and session when everything is in order', function (done) {
             var cookies = request.jar();
-            createUserAndSetSessionCookie(username, password, name, email, cookies).then(function (data) {
+            helper.createUserAndSetSessionCookie(username, password, name, email, cookies).then(function (data) {
                 data.response.statusCode.should.equal(201);
                 data.body.should.have.property("status");
                 data.body.status.should.equal("Successfully registered user");
@@ -219,8 +221,8 @@ describe('Authentication Tests', function () {
         });
 
         it('should not create user if username already exists', function (done) {
-            createUserAndSetSessionCookie(username, password, name, email).then(function () {
-                return createUserAndSetSessionCookie(username, "somepassword", "somebody", "test2@test.com");
+            helper.createUserAndSetSessionCookie(username, password, name, email).then(function () {
+                return helper.createUserAndSetSessionCookie(username, "somepassword", "somebody", "test2@test.com");
             }).then(function (data) {
                 data.response.statusCode.should.equal(409);
                 data.body.should.have.property("error");
@@ -231,8 +233,8 @@ describe('Authentication Tests', function () {
         });
 
         it('should not create user if the email is already registered to someone else', function (done) {
-            createUserAndSetSessionCookie(username, password, name, email).then(function () {
-                return createUserAndSetSessionCookie("someotheruser", "somepassword", "someguy", email);
+            helper.createUserAndSetSessionCookie(username, password, name, email).then(function () {
+                return helper.createUserAndSetSessionCookie("someotheruser", "somepassword", "someguy", email);
             }).then(function (data) {
                 data.response.statusCode.should.equal(409);
                 data.body.should.have.property("error");
@@ -253,7 +255,7 @@ describe('Authentication Tests', function () {
 
         beforeEach(function (done) {
             User.remove(function () {
-                createUserAndSetSessionCookie(username, password, name, email, cookies).then(function () {
+                helper.createUserAndSetSessionCookie(username, password, name, email, cookies).then(function () {
                     done();
                 }, done);
             });
@@ -388,7 +390,7 @@ describe('Authentication Tests', function () {
 
         it('should return details of currently logged in user', function (done) {
             var cookies = request.jar();
-            createUserAndSetSessionCookie(username, password, name, email, cookies).then(function () {
+            helper.createUserAndSetSessionCookie(username, password, name, email, cookies).then(function () {
                 var deferred = q.defer();
                 request.get(BASE_URL + '/user', {
                     json: true, jar: cookies
@@ -440,7 +442,7 @@ describe('Authentication Tests', function () {
 
         it('should return details of currently logged in user', function (done) {
             var cookies = request.jar();
-            createUserAndSetSessionCookie(username, password, name, email, cookies).then(function () {
+            helper.createUserAndSetSessionCookie(username, password, name, email, cookies).then(function () {
                 var deferred = q.defer();
                 request.del(BASE_URL + '/user', {
                     json: true, jar: cookies, body: {}
@@ -463,24 +465,4 @@ describe('Authentication Tests', function () {
         });
     });
 });
-
-// Creates the user and sets the session cookie in the provided (optional) cookies jar
-function createUserAndSetSessionCookie(username, password, name, email, cookies) {
-    var deferred = q.defer();
-    request.post(BASE_URL + '/user', {
-        json: true, jar: cookies, body: {
-            username: username,
-            password: password,
-            name: name,
-            email: email
-        }
-    }, function (err, response, body) {
-        if (err) {
-            deferred.reject(err);
-        } else {
-            deferred.resolve({response: response, body: body});
-        }
-    });
-    return deferred.promise;
-}
 
