@@ -9,7 +9,6 @@ module.exports = function () {
         email: {type: String, unique: true, required: true},
         hash: {type: String, required: true},
         salt: {type: String, required: true},
-        tags: {type: Array, "default": ["Eating Out", "Fun", "Utilities"]}
     });
 
     return mongoose.model('User', UserSchema);

@@ -5,7 +5,7 @@ var mongoose = require('mongoose');
 var q = require('q');
 
 var PORT = 3000;
-var MONGODB_CONNECTION_STRING = 'mongodb://localhost/expensior_test';
+var MONGODB_CONNECTION_STRING = 'mongodb://localhost/auth_test';
 var BASE_URL = "http://localhost:" + PORT;
 
 var server;
@@ -37,7 +37,7 @@ describe('Authentication Tests', function () {
         should.exist(mongoose.connection)
     });
 
-    describe('User signup validations', function () {
+    describe('User signup validation tests', function () {
         it('should throw an error when creating a user without username', function (done) {
             request.post(BASE_URL + '/user', {json: true, body: {}}, function (err, response, body) {
                 if (err) {
@@ -209,7 +209,7 @@ describe('Authentication Tests', function () {
 
         it('should create an user and session when everything is in order', function (done) {
             var cookies = request.jar();
-            createUser(username, password, name, email, cookies).then(function (data) {
+            createUserAndSetSessionCookie(username, password, name, email, cookies).then(function (data) {
                 data.response.statusCode.should.equal(201);
                 data.body.should.have.property("status");
                 data.body.status.should.equal("Successfully registered user");
@@ -219,8 +219,8 @@ describe('Authentication Tests', function () {
         });
 
         it('should not create user if username already exists', function (done) {
-            createUser(username, password, name, email).then(function () {
-                return createUser(username, "somepassword", "somebody", "test2@test.com");
+            createUserAndSetSessionCookie(username, password, name, email).then(function () {
+                return createUserAndSetSessionCookie(username, "somepassword", "somebody", "test2@test.com");
             }).then(function (data) {
                 data.response.statusCode.should.equal(409);
                 data.body.should.have.property("error");
@@ -231,8 +231,8 @@ describe('Authentication Tests', function () {
         });
 
         it('should not create user if the email is already registered to someone else', function (done) {
-            createUser(username, password, name, email).then(function () {
-                return createUser("someotheruser", "somepassword", "someguy", email);
+            createUserAndSetSessionCookie(username, password, name, email).then(function () {
+                return createUserAndSetSessionCookie("someotheruser", "somepassword", "someguy", email);
             }).then(function (data) {
                 data.response.statusCode.should.equal(409);
                 data.body.should.have.property("error");
@@ -253,7 +253,7 @@ describe('Authentication Tests', function () {
 
         beforeEach(function (done) {
             User.remove(function () {
-                createUser(username, password, name, email, cookies).then(function () {
+                createUserAndSetSessionCookie(username, password, name, email, cookies).then(function () {
                     done();
                 }, done);
             });
@@ -360,10 +360,112 @@ describe('Authentication Tests', function () {
             });
         });
     });
+
+    describe('User information tests', function () {
+        var username = "test",
+            password = "testingpassword",
+            name = "Tester",
+            email = "test@test.com";
+
+        beforeEach(function (done) {
+            User.remove(done);
+        });
+
+        it('should not return any user information if not logged in', function (done) {
+            request.get(BASE_URL + '/user', {
+                json: true
+            }, function (err, response, body) {
+                if (err) {
+                    done(err);
+                }
+                response.statusCode.should.equal(401);
+                body.should.have.property("error");
+                body.error.should.have.property("message");
+                body.error.message.should.equal("Not logged in");
+                done();
+            });
+        });
+
+        it('should return details of currently logged in user', function (done) {
+            var cookies = request.jar();
+            createUserAndSetSessionCookie(username, password, name, email, cookies).then(function () {
+                var deferred = q.defer();
+                request.get(BASE_URL + '/user', {
+                    json: true, jar: cookies
+                }, function (err, response, body) {
+                    if (err) {
+                        deferred.reject(err);
+                    }
+                    deferred.resolve({response: response, body: body});
+                });
+                return deferred.promise;
+            }).then(function (data) {
+                data.response.statusCode.should.equal(200);
+                data.body.should.have.property("user");
+                data.body.user.should.have.property("username");
+                data.body.user.should.have.property("name");
+                data.body.user.should.have.property("email");
+                data.body.user.username.should.equal(username);
+                data.body.user.name.should.equal(name);
+                data.body.user.email.should.equal(email);
+                done();
+            }).fail(done);
+        });
+    });
+
+    describe('User deletion tests', function () {
+        var username = "test",
+            password = "testingpassword",
+            name = "Tester",
+            email = "test@test.com";
+
+        beforeEach(function (done) {
+            User.remove(done);
+        });
+
+        it('should not delete any user if not logged in', function (done) {
+            request.get(BASE_URL + '/user', {
+                json: true
+            }, function (err, response, body) {
+                if (err) {
+                    done(err);
+                }
+                response.statusCode.should.equal(401);
+                body.should.have.property("error");
+                body.error.should.have.property("message");
+                body.error.message.should.equal("Not logged in");
+                done();
+            });
+        });
+
+        it('should return details of currently logged in user', function (done) {
+            var cookies = request.jar();
+            createUserAndSetSessionCookie(username, password, name, email, cookies).then(function () {
+                var deferred = q.defer();
+                request.del(BASE_URL + '/user', {
+                    json: true, jar: cookies, body: {}
+                }, function (err, response, body) {
+                    if (err) {
+                        deferred.reject(err);
+                    }
+                    deferred.resolve({response: response, body: body});
+                });
+                return deferred.promise;
+            }).then(function (data) {
+                data.response.statusCode.should.equal(200);
+                data.body.should.have.property("status");
+                data.body.status.should.equal("Deleted user successfully");
+                return User.findOne({username: username}).exec();
+            }).then(function (user) {
+                should(user).be.null;
+                done();
+            }).fail(done);
+        });
+    });
 });
 
-
-function createUser(username, password, name, email, cookies) {
+// Creates the user and sets the session cookie in the provided (optional) cookies jar
+function createUserAndSetSessionCookie(username, password, name, email, cookies) {
     var deferred = q.defer();
     request.post(BASE_URL + '/user', {
         json: true, jar: cookies, body: {
