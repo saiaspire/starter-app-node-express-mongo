@@ -2,8 +2,10 @@ var auth = require('../lib/auth');
 var should = require('should');
 var request = require('request');
 var jar = request.jar();
+var mongoose = require('mongoose');
 
 var PORT = 3000;
+var MONGODB_CONNECTION_STRING = 'mongodb://localhost/expensior_test';
 var BASE_URL = "http://localhost:" + PORT;
 
 var server;
@@ -11,11 +13,21 @@ var server;
 describe('Authentication Module Tests', function () {
 
     before(function (done) {
-        server = auth.listen(PORT, done);
+        mongoose.connect(MONGODB_CONNECTION_STRING, function (err) {
+            if (err) {
+                console.error(err);
+                done();
+                return;
+            }
+            server = auth.listen(PORT, done);
+        });
     });
 
     after(function (done) {
-        server.close(done);
+        server.close(function () {
+            mongoose.connection.db.dropDatabase();
+            mongoose.connection.close(done);
+        });
     });
 
     it('should be ready', function () {
