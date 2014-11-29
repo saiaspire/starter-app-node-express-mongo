@@ -87,6 +87,7 @@ The user and session related APIs are under [/lib/auth](https://github.com/saias
 
 * **node.js** >= *v0.10.29*
 * **mongodb** >= *2.4.6*
+* **redis** >= *2.0.0* 
 
 ## How to use this?
 Clone the repository and install all dependencies,
