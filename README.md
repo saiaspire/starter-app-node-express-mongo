@@ -1,7 +1,7 @@
 Node starter REST service with Mongo & Express
 ==============================
 
-This repo is a starter kit for Node based REST services and comes with APIs to create & login users with sessions
+This repo is a starter kit for Node based REST services and comes with APIs to create & login users with Redis backed sessions
 
 You can add the APIs specific to your application under [/lib/api](https://github.com/saiaspire/starter-app-node-express-mongo/tree/master/lib/api)
 
